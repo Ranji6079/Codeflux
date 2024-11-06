@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Quiz with Compiler</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #e9ecef;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            flex: 1;
+        }
+
+        h1 {
+            text-align: center;
+            color: #343a40;
+            margin-bottom: 20px;
+        }
+
+        .sidebar {
+            width: 250px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            margin-right: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .question {
+            margin-bottom: 25px;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 20px;
+        }
+
+        .option {
+            margin-left: 20px;
+            display: block;
+            padding: 8px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .option:hover {
+            background-color: #f8f9fa;
+        }
+
+        input[type="radio"] {
+            margin-right: 10px;
+        }
+
+        button {
+            display: inline-block;
+            width: 48%;
+            padding: 15px;
+            background-color: #007bff;
+            border: none;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 20px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #result {
+            text-align: center;
+            font-size: 24px;
+            margin-top: 20px;
+            color: #495057;
+        }
+
+        #timer {
+            text-align: center;
+            font-size: 24px;
+            color: #dc3545;
+        }
+
+        #compiler-frame {
+            width: 100%;
+            height: 300px;
+            margin-top: 20px;
+            border: 1px solid #dee2e6;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        iframe {
+            display: block;
+        }
+
+        iframe#compiler-frame {
+            border: none;
+            width: 100%;
+            height: 300px;
+        }
+
+        /* Hide specific elements inside the iframe, if possible */
+        iframe#compiler-frame .nav-bar {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar">
+        <h3>Select Quiz</h3>
+        <select id="quizSelect" onchange="loadQuiz()">
+            <option value="" disabled selected>Select a quiz</option>
+            <option value="quiz1">AI/ML Quiz</option>
+            <option value="quiz2">Coding Quiz</option>
+        </select>
+        <h4>Progress</h4>
+        <p id="questionProgress">Question 1 of 10</p>
+        <p id="scoreDisplay">Score: 0</p>
+    </div>
+
+    <div class="container">
+        <h1 id="quizTitle">Online Quiz</h1>
+        <div id="timer">Time left: 10:00</div>
+        <form id="quizForm" onsubmit="event.preventDefault();">
+            <div id="quiz"></div>
+            <button type="button" id="prevButton" class="hidden" onclick="prevQuestion()">Previous</button>
+            <button type="button" id="nextButton" onclick="nextQuestion()">Next</button>
+            <button type="button" id="submitButton" class="hidden" onclick="submitQuiz()">Submit</button>
+            <button type="button" onclick="cancelQuiz()">Cancel Quiz</button>
+        </form>
+
+        <button id="retryButton" class="hidden" onclick="retryQuiz()">Retry Quiz</button>
+        <div id="result"></div>
+
+        <iframe id="compiler-frame" src="/compiler?hide_nav=true" title="Embedded Compiler"
+            style="border:none; width: 100%; height: 300px;"></iframe>
+
+
+    </div>
+
+    <script>
+        const quizzes = {
+            quiz1: {
+                title: "AI/ML Quiz",
+                questions: [
+                    { question: "Which of the following is an unsupervised learning algorithm?", options: ["K-means clustering", "Logistic regression", "Decision tree", "Random forest"], answer: "K-means clustering" },
+                    { question: "Which library is used in Python for deep learning?", options: ["Scikit-learn", "TensorFlow", "Pandas", "Matplotlib"], answer: "TensorFlow" },
+                    { question: "What does 'overfitting' mean in machine learning?", options: ["Model fits training data too well", "Model fails to generalize", "Both A and B", "None of the above"], answer: "Both A and B" },
+                    { question: "What is the purpose of regularization in machine learning?", options: ["To reduce model complexity", "To improve prediction accuracy", "To prevent overfitting", "All of the above"], answer: "All of the above" },
+                    { question: "Which algorithm is used for classification tasks?", options: ["K-means", "Support Vector Machine", "Principal Component Analysis", "Linear Regression"], answer: "Support Vector Machine" },
+                    { question: "What is a common evaluation metric for classification problems?", options: ["Mean Squared Error", "Accuracy", "R-squared", "AUC-ROC"], answer: "Accuracy" },
+                    { question: "Which type of neural network is best for image processing?", options: ["Convolutional Neural Network", "Recurrent Neural Network", "Feedforward Neural Network", "Generative Adversarial Network"], answer: "Convolutional Neural Network" },
+                    { question: "What does PCA stand for?", options: ["Principal Component Analysis", "Partial Component Analysis", "Primary Component Analysis", "Practical Component Analysis"], answer: "Principal Component Analysis" },
+                    { question: "What is the output of a regression model?", options: ["Categorical value", "Continuous value", "Binary value", "None of the above"], answer: "Continuous value" },
+                    { question: "In reinforcement learning, what does 'agent' refer to?", options: ["The environment", "The decision-maker", "The reward system", "The observer"], answer: "The decision-maker" }
+                ]
+            },
+            quiz2: {
+                title: "Coding Quiz",
+                questions: [
+                    {
+                        question: "Write a function in Python that returns the sum of two numbers.",
+                        language: "Python",
+                        testCase: "sum(3, 5)",
+                        expectedOutput: "8"
+                    },
+                    {
+                        question: "Write a C++ program that returns the product of two numbers.",
+                        language: "C++",
+                        testCase: "multiply(4, 5)",
+                        expectedOutput: "20"
+                    },
+                    {
+                        question: "Write a Java method that checks if a number is prime.",
+                        language: "Java",
+                        testCase: "isPrime(7)",
+                        expectedOutput: "true"
+                    },
+                    {
+                        question: "Write a Python function to find the maximum of three numbers.",
+                        language: "Python",
+                        testCase: "max_of_three(5, 10, 2)",
+                        expectedOutput: "10"
+                    },
+                    {
+                        question: "Write a C++ function that reverses a string.",
+                        language: "C++",
+                        testCase: "reverseString(\"hello\")",
+                        expectedOutput: "\"olleh\""
+                    },
+                    {
+                        question: "Write a Java method to calculate the factorial of a number.",
+                        language: "Java",
+                        testCase: "factorial(5)",
+                        expectedOutput: "120"
+                    },
+                    {
+                        question: "Write a Python function that checks if a string is a palindrome.",
+                        language: "Python",
+                        testCase: "isPalindrome(\"racecar\")",
+                        expectedOutput: "true"
+                    },
+                    {
+                        question: "Write a C++ function to find the greatest common divisor (GCD) of two numbers.",
+                        language: "C++",
+                        testCase: "gcd(24, 36)",
+                        expectedOutput: "12"
+                    },
+                    {
+                        question: "Write a Java method that finds the length of a string.",
+                        language: "Java",
+                        testCase: "lengthOfString(\"OpenAI\")",
+                        expectedOutput: "6"
+                    },
+                    {
+                        question: "Write a Python function that counts vowels in a string.",
+                        language: "Python",
+                        testCase: "countVowels(\"Hello World\")",
+                        expectedOutput: "3"
+                    }
+                ]
+            }
+        };
+
+        let currentQuiz = {};
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let timer;
+        let timeLeft = 600;
+
+        function startTimer() {
+            timer = setInterval(() => {
+                timeLeft--;
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                document.getElementById("timer").innerText = `Time left: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    endQuiz();
+                }
+            }, 1000);
+        }
+
+        function loadQuiz() {
+            const quizSelect = document.getElementById("quizSelect").value;
+            currentQuiz = quizzes[quizSelect];
+            currentQuestionIndex = 0;
+            score = 0;
+            timeLeft = 600;
+            document.getElementById("quizTitle").innerText = currentQuiz.title;
+            displayQuestion(currentQuestionIndex);
+            startTimer();
+        }
+
+        function displayQuestion(index) {
+            const quizContainer = document.getElementById("quiz");
+            quizContainer.innerHTML = '';
+            const question = currentQuiz.questions[index];
+
+            if (question.language) {
+                quizContainer.innerHTML += `<div class="question"><strong>${index + 1}. ${question.question}</strong><br><textarea id="codeInput_${index}" rows="4" cols="50" placeholder="Write your code here..."></textarea></div>`;
+            } else {
+                quizContainer.innerHTML += `<div class="question"><strong>${index + 1}. ${question.question}</strong></div>`;
+                question.options.forEach(option => {
+                    quizContainer.innerHTML += `<label class="option"><input type="radio" name="question${index}" value="${option}"> ${option}</label>`;
+                });
+            }
+
+            document.getElementById("questionProgress").innerText = `Question ${index + 1} of ${currentQuiz.questions.length}`;
+            updateNavigationButtons();
+        }
+
+        function updateNavigationButtons() {
+            document.getElementById("prevButton").classList.toggle("hidden", currentQuestionIndex === 0);
+            document.getElementById("nextButton").classList.toggle("hidden", currentQuestionIndex === currentQuiz.questions.length - 1);
+            document.getElementById("submitButton").classList.toggle("hidden", currentQuestionIndex !== currentQuiz.questions.length - 1);
+        }
+
+        function nextQuestion() {
+            if (currentQuestionIndex < currentQuiz.questions.length - 1) {
+                currentQuestionIndex++;
+                displayQuestion(currentQuestionIndex);
+            }
+        }
+
+        function prevQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                displayQuestion(currentQuestionIndex);
+            }
+        }
+
+        function submitQuiz() {
+            for (let i = 0; i < currentQuiz.questions.length; i++) {
+                const question = currentQuiz.questions[i];
+                if (question.language) {
+                    const userCode = document.getElementById(`codeInput_${i}`).value;
+                    // Call a grading function here to evaluate the userCode against the expectedOutput and testCase
+                    if (evaluateCode(userCode, question.testCase, question.expectedOutput)) {
+                        score++;
+                    }
+                } else {
+                    const userAnswer = document.querySelector(`input[name="question${i}"]:checked`);
+                    if (userAnswer && userAnswer.value === question.answer) {
+                        score++;
+                    }
+                }
+            }
+            endQuiz();
+        }
+
+        function evaluateCode(code, testCase, expectedOutput) {
+            console.log(`Evaluating code: ${code} for test case: ${testCase}`);
+            return true;
+        }
+
+        function endQuiz() {
+            clearInterval(timer);
+            document.getElementById("quizForm").classList.add("hidden");
+            document.getElementById("result").innerText = `Your score: ${score} out of ${currentQuiz.questions.length}`;
+            document.getElementById("retryButton").classList.remove("hidden");
+        }
+
+        function cancelQuiz() {
+            if (confirm("Are you sure you want to cancel the quiz?")) {
+                endQuiz();
+            }
+        }
+
+        function retryQuiz() {
+            document.getElementById("retryButton").classList.add("hidden");
+            loadQuiz();
+        }
+    </script>
+</body>
+
+</html>
