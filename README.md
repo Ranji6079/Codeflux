@@ -1,7 +1,4 @@
-# Codeflux
-Here’s the revised description:
 
----
 
 **Code Flux** is a learning website designed for students, and enthusiasts eager to dive into Artificial Intelligence (AI) and Machine Learning (ML). The platform provides an engaging environment where users can explore a wide range of AI/ML concepts through tutorials, hands-on exercises. Whether you're a beginner or intermediate learner, Code Flux offers resources to help you master machine learning algorithms, data analysis, and model deployment.
 
