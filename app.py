@@ -532,6 +532,6 @@ def install_libraries(libraries):
             subprocess.run(['pip', 'install', library], check=True)
         except subprocess.CalledProcessError as e:
             print(f"Error installing {library}: {e}")
-if __name__ == '__main__':
-    init_db()
-    app.run(host='0.0.0.0', port=5000)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))  # Default to port 5000 if PORT not found
+    app.run(host="0.0.0.0", port=port)
