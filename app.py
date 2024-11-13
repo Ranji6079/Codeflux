@@ -17,6 +17,16 @@ from werkzeug.utils import secure_filename
 import logging
 import os
 
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('app.log'),
+        logging.StreamHandler()
+    ]
+)
+
+
 from flask import Flask, request
 from paypalserversdk.http.auth.o_auth_2 import ClientCredentialsAuthCredentials
 from paypalserversdk.logging.configuration.api_logging_configuration import (
@@ -42,8 +52,6 @@ from paypalserversdk.models.card_attributes import CardAttributes
 from paypalserversdk.models.card_verification import CardVerification
 from paypalserversdk.models.card_verification_method import CardVerificationMethod
 from paypalserversdk.api_helper import ApiHelper
-
-app = Flask(__name__)
 
 
 paypal_client: PaypalServersdkClient = PaypalServersdkClient(
@@ -179,11 +187,6 @@ def index():
         return redirect(url_for('home_page'))  # Redirect to home if logged in
     return render_template('index.html')  # Render index.html for guests
 
-"""
-Create an order to start the transaction.
-
-@see https://developer.paypal.com/docs/api/orders/v2/#orders_create
-"""
 @app.route("/api/orders", methods=["POST"])
 def create_order():
     request_body = request.get_json()
@@ -207,7 +210,6 @@ def create_order():
         }
     )
     return ApiHelper.json_serialize(order.body)
-
 
 
 # Resources route
@@ -353,37 +355,76 @@ def verify_otp():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        username = request.form['username']
-        email = request.form['email']
-        password = request.form['password']
-        
-        conn = sqlite3.connect('database.db')
-        c = conn.cursor()
-        
         try:
-            c.execute("INSERT INTO users (username, email, password) VALUES (?, ?, ?)", (username, email, password))
-            conn.commit()
-        except sqlite3.IntegrityError:
-            flash("Username or email already exists. Please try a different one.")
+            username = request.form['username']
+            email = request.form['email']
+            password = request.form['password']
+            
+            # Input validation
+            if not username or not email or not password:
+                flash("All fields are required.")
+                return redirect(url_for('register'))
+            
+            # Hash the password
+            hashed_password = generate_password_hash(password)
+            
+            conn = get_db()  # Use the get_db function you already have
+            cursor = conn.cursor()
+            
+            try:
+                # Insert new user
+                cursor.execute("""
+                    INSERT INTO users (username, email, password, has_paid) 
+                    VALUES (?, ?, ?, ?)
+                """, (username, email, hashed_password, 0))
+                
+                conn.commit()
+                
+                # Generate and send OTP
+                otp = str(random.randint(100000, 999999))
+                send_otp(email, otp)
+                
+                # Update OTP in database
+                cursor.execute("UPDATE users SET otp = ? WHERE email = ?", (otp, email))
+                conn.commit()
+                
+                # Set session variables
+                session['email'] = email
+                cursor.execute("SELECT id FROM users WHERE email = ?", (email,))
+                user = cursor.fetchone()
+                if user:
+                    session['user_id'] = user[0]
+                
+                flash("Registration successful! Please verify your OTP.")
+                return redirect(url_for('verify_otp'))
+                
+            except sqlite3.IntegrityError as e:
+                conn.rollback()
+                if "UNIQUE constraint failed: users.email" in str(e):
+                    flash("Email already registered. Please use a different email.")
+                elif "UNIQUE constraint failed: users.username" in str(e):
+                    flash("Username already taken. Please choose a different username.")
+                else:
+                    flash("Registration failed. Please try again.")
+                return redirect(url_for('register'))
+                
+            except Exception as e:
+                conn.rollback()
+                logging.error(f"Registration error: {str(e)}")
+                flash("An error occurred during registration. Please try again.")
+                return redirect(url_for('register'))
+                
+            finally:
+                conn.close()
+                
+        except Exception as e:
+            logging.error(f"Form processing error: {str(e)}")
+            flash("An error occurred. Please try again.")
             return redirect(url_for('register'))
-        finally:
-            conn.close()
-        
-        otp = str(random.randint(100000, 999999))
-        send_otp(email, otp)  # Send OTP for registration verification
-        
-        # Save OTP in the database
-        conn = sqlite3.connect('database.db')
-        c = conn.cursor()
-        c.execute("UPDATE users SET otp = ? WHERE email = ?", (otp, email))
-        conn.commit()
-        conn.close()
-        
-        session['email'] = email
-        flash("Registration successful! Please verify your OTP.")
-        return redirect(url_for('verify_otp'))
     
+    # GET request - show registration form
     return render_template('registration.html')
+
 # Route to update user profile
 @app.route('/update_profile', methods=['POST'])
 def update_profile():
@@ -567,89 +608,6 @@ def utility_processor():
         return False
     return dict(user_has_paid=check_payment)
 
-@app.route("/api/orders/<order_id>/capture", methods=["POST"])
-def capture_order(order_id):
-    try:
-        order = orders_controller.orders_capture(
-            {"id": order_id, "prefer": "return=representation"}
-        )
-        
-        # Parse the response body
-        order_data = ApiHelper.json_serialize(order.body)
-        order_dict = ApiHelper.json_deserialize(order_data)
-        
-        # Check if payment was successful
-        if order_dict.get('status') == "COMPLETED":
-            if 'user_id' in session:
-                conn = get_db()
-                cursor = conn.cursor()
-                try:
-                    # Update user payment status
-                    cursor.execute('UPDATE users SET has_paid = 1 WHERE id = ?', 
-                                 (session['user_id'],))
-                    
-                    # Get payment details
-                    payment_info = order_dict.get('purchase_units', [{}])[0].get('payments', {}).get('captures', [{}])[0]
-                    amount = payment_info.get('amount', {}).get('value', '0.00')
-                    
-                    # Record the payment
-                    cursor.execute('''
-                        INSERT INTO payments (user_id, amount, payment_id, status)
-                        VALUES (?, ?, ?, ?)
-                    ''', (session['user_id'], float(amount), order_id, 'COMPLETED'))
-                    
-                    conn.commit()
-                    logging.info(f"Payment recorded successfully for user {session['user_id']}")
-                    
-                except Exception as e:
-                    conn.rollback()
-                    logging.error(f"Database error: {str(e)}")
-                    raise e
-                finally:
-                    conn.close()
-        
-        return order_data
-        
-    except Exception as e:
-        logging.error(f"Error capturing order: {str(e)}")
-        return jsonify({
-            "error": str(e),
-            "message": "Failed to process payment"
-        }), 500
-
-
-@app.route('/mlai')
-def mlai_page():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    
-    conn = get_db()
-    cursor = conn.cursor()
-    try:
-        # Check payment status
-        cursor.execute('''
-            SELECT u.has_paid, p.payment_date 
-            FROM users u 
-            LEFT JOIN payments p ON u.id = p.user_id 
-            WHERE u.id = ? 
-            ORDER BY p.payment_date DESC LIMIT 1
-        ''', (session['user_id'],))
-        result = cursor.fetchone()
-        
-        if result and result['has_paid']:
-            return render_template('mlai.html', 
-                                 payment_date=result['payment_date'])
-        else:
-            flash("Please complete the payment to access the ML/AI course content.")
-            return redirect(url_for('payment_page'))
-            
-    except Exception as e:
-        logging.error(f"Database error: {str(e)}")
-        flash("An error occurred. Please try again.")
-        return redirect(url_for('home_page'))
-    finally:
-        conn.close()
-
 @app.route('/payment')
 def payment_page():
     if 'user_id' not in session:
@@ -800,6 +758,177 @@ def install_libraries(libraries):
             subprocess.run(['pip', 'install', library], check=True)
         except subprocess.CalledProcessError as e:
             print(f"Error installing {library}: {e}")
+
+@app.route('/mlai')
+def mlai_page():
+    logging.info("Accessing ML/AI page - Starting access check")
+    
+    # Check if user is logged in
+    if 'user_id' not in session:
+        logging.warning("Access attempt without login - user_id not in session")
+        flash("Please log in to access the ML/AI course content.")
+        return redirect(url_for('login'))
+    
+    user_id = session['user_id']
+    logging.info(f"User ID {user_id} attempting to access ML/AI content")
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        # Check payment status with detailed query
+        cursor.execute('''
+            SELECT u.id, u.email, u.has_paid, 
+                   COALESCE(p.status, 'NO_PAYMENT') as payment_status,
+                   COALESCE(p.payment_date, 'NEVER') as last_payment_date
+            FROM users u
+            LEFT JOIN payments p ON u.id = p.user_id
+            WHERE u.id = ?
+            ORDER BY p.payment_date DESC
+            LIMIT 1
+        ''', (user_id,))
+        result = cursor.fetchone()
+        
+        if result:
+            logging.info(f"Payment check results for user {user_id}:")
+            logging.info(f"has_paid status: {result['has_paid']}")
+            logging.info(f"payment status: {result['payment_status']}")
+            logging.info(f"last payment date: {result['last_payment_date']}")
+            
+            if result['has_paid']:
+                logging.info(f"Access granted to user {user_id} - Payment verified")
+                return render_template('mlai.html')
+            else:
+                logging.warning(f"Access denied to user {user_id} - No payment found")
+                flash("Please complete the payment to access the ML/AI course content.")
+                return redirect(url_for('payment_page'))
+        else:
+            logging.error(f"No user record found for user_id {user_id}")
+            flash("User record not found. Please contact support.")
+            return redirect(url_for('home_page'))
+            
+    except Exception as e:
+        logging.error(f"Database error for user {user_id}: {str(e)}")
+        logging.error(f"Full exception: {e}", exc_info=True)
+        flash("An error occurred. Please try again.")
+        return redirect(url_for('home_page'))
+    finally:
+        conn.close()
+        logging.info(f"ML/AI page access check completed for user {user_id}")
+
+# Add a decorator to enforce payment requirement
+def payment_required(f):
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            logging.warning("Payment check: No user_id in session")
+            flash("Please log in to access this content.")
+            return redirect(url_for('login'))
+            
+        conn = get_db()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('SELECT has_paid FROM users WHERE id = ?', (session['user_id'],))
+            result = cursor.fetchone()
+            
+            if not result or not result['has_paid']:
+                logging.warning(f"Payment check: User {session['user_id']} has not paid")
+                flash("Please complete the payment to access this content.")
+                return redirect(url_for('payment_page'))
+                
+            return f(*args, **kwargs)
+            
+        except Exception as e:
+            logging.error(f"Payment check error: {str(e)}")
+            flash("An error occurred. Please try again.")
+            return redirect(url_for('home_page'))
+        finally:
+            conn.close()
+    return decorated_function
+
+# Modify the capture_order function to properly set has_paid
+@app.route("/api/orders/<order_id>/capture", methods=["POST"])
+def capture_order(order_id):
+    logging.info(f"Capturing order {order_id}")
+    try:
+        order = orders_controller.orders_capture(
+            {"id": order_id, "prefer": "return=representation"}
+        )
+        
+        order_data = ApiHelper.json_serialize(order.body)
+        order_dict = ApiHelper.json_deserialize(order_data)
+        
+        logging.info(f"Payment status: {order_dict.get('status')}")
+        
+        if order_dict.get('status') == "COMPLETED":
+            if 'user_id' in session:
+                conn = get_db()
+                cursor = conn.cursor()
+                try:
+                    # Update user payment status
+                    cursor.execute('''
+                        UPDATE users 
+                        SET has_paid = 1 
+                        WHERE id = ?
+                    ''', (session['user_id'],))
+                    
+                    payment_info = order_dict.get('purchase_units', [{}])[0].get('payments', {}).get('captures', [{}])[0]
+                    amount = payment_info.get('amount', {}).get('value', '0.00')
+                    
+                    cursor.execute('''
+                        INSERT INTO payments (user_id, amount, payment_id, status)
+                        VALUES (?, ?, ?, ?)
+                    ''', (session['user_id'], float(amount), order_id, 'COMPLETED'))
+                    
+                    conn.commit()
+                    logging.info(f"Payment recorded successfully for user {session['user_id']}")
+                    
+                except Exception as e:
+                    conn.rollback()
+                    logging.error(f"Database error in capture_order: {str(e)}")
+                    raise e
+                finally:
+                    conn.close()
+        
+        return order_data
+        
+    except Exception as e:
+        logging.error(f"Error capturing order: {str(e)}")
+        return jsonify({
+            "error": str(e),
+            "message": "Failed to process payment"
+        }), 500
+
+# Add a function to verify database state
+def verify_payment_status(user_id):
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            SELECT u.id, u.email, u.has_paid, 
+                   p.status as payment_status,
+                   p.payment_date
+            FROM users u
+            LEFT JOIN payments p ON u.id = p.user_id
+            WHERE u.id = ?
+        ''', (user_id,))
+        result = cursor.fetchone()
+        
+        if result:
+            logging.info(f"""
+                Payment Status Check:
+                User ID: {result['id']}
+                Email: {result['email']}
+                Has Paid: {result['has_paid']}
+                Payment Status: {result['payment_status']}
+                Payment Date: {result['payment_date']}
+            """)
+        else:
+            logging.warning(f"No payment record found for user {user_id}")
+            
+    except Exception as e:
+        logging.error(f"Error verifying payment status: {str(e)}")
+    finally:
+        conn.close()
+
 
 if __name__ == "__main__":
     init_db()  # Initialize the database
