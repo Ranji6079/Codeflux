@@ -39,3 +39,127 @@
 2024-11-14 01:09:47,713 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:09:47] "GET /pdfs/managing_ai_costs.pdf HTTP/1.1" 200 -
 2024-11-14 01:10:07,551 - werkzeug - INFO -  * Detected change in 'D:\\Work\\Web\\Codeflux\\app.py', reloading
 2024-11-14 01:10:07,619 - werkzeug - INFO -  * Restarting with stat
+2024-11-14 01:11:03,533 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.100.2:5000
+2024-11-14 01:11:03,533 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2024-11-14 01:11:03,545 - werkzeug - INFO -  * Restarting with stat
+2024-11-14 01:11:04,863 - werkzeug - WARNING -  * Debugger is active!
+2024-11-14 01:11:04,880 - werkzeug - INFO -  * Debugger PIN: 406-770-469
+2024-11-14 01:11:06,546 - root - INFO - Accessing ML/AI page - Starting access check
+2024-11-14 01:11:06,546 - root - INFO - User ID 5 attempting to access ML/AI content
+2024-11-14 01:11:06,562 - root - INFO - Payment check results for user 5:
+2024-11-14 01:11:06,562 - root - INFO - has_paid status: 1
+2024-11-14 01:11:06,562 - root - INFO - payment status: COMPLETED
+2024-11-14 01:11:06,562 - root - INFO - last payment date: 2024-11-13 21:14:10
+2024-11-14 01:11:06,562 - root - INFO - Access granted to user 5 - Payment verified
+2024-11-14 01:11:06,562 - root - INFO - ML/AI page access check completed for user 5
+2024-11-14 01:11:06,562 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:11:06] "GET /mlai HTTP/1.1" 200 -
+2024-11-14 01:11:06,946 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:11:06] "[36mGET /pdfs/intro_to_aiml.pdf HTTP/1.1[0m" 304 -
+2024-11-14 01:11:06,950 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:11:06] "[36mGET /pdfs/types_of_ml.pdf HTTP/1.1[0m" 304 -
+2024-11-14 01:11:06,952 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:11:06] "[36mGET /pdfs/setup_aiml_env.pdf HTTP/1.1[0m" 304 -
+2024-11-14 01:11:06,958 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:11:06] "[36mGET /pdfs/ai_model_security.pdf HTTP/1.1[0m" 304 -
+2024-11-14 01:11:06,960 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:11:06] "[36mGET /pdfs/deploying_ml_models.pdf HTTP/1.1[0m" 304 -
+2024-11-14 01:11:06,962 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:11:06] "[36mGET /pdfs/managing_ai_costs.pdf HTTP/1.1[0m" 304 -
+2024-11-14 01:11:11,504 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:11:11] "[32mGET / HTTP/1.1[0m" 302 -
+2024-11-14 01:11:11,519 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:11:11] "[32mGET /home HTTP/1.1[0m" 302 -
+2024-11-14 01:11:11,542 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:11:11] "GET /login HTTP/1.1" 200 -
+2024-11-14 01:11:11,784 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:11:11] "GET /static/images/logo.png HTTP/1.1" 200 -
+2024-11-14 01:11:14,722 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:11:14] "GET /login HTTP/1.1" 200 -
+2024-11-14 01:11:14,780 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:11:14] "[36mGET /static/images/logo.png HTTP/1.1[0m" 304 -
+2024-11-14 01:11:25,693 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:11:25] "[32mPOST /login HTTP/1.1[0m" 302 -
+2024-11-14 01:11:25,709 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:11:25] "GET /verify_otp HTTP/1.1" 200 -
+2024-11-14 01:11:27,402 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:11:27] "GET /login HTTP/1.1" 200 -
+2024-11-14 01:11:35,663 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:11:35] "POST /login HTTP/1.1" 200 -
+2024-11-14 01:11:35,735 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:11:35] "[36mGET /static/images/logo.png HTTP/1.1[0m" 304 -
+2024-11-14 01:11:41,961 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:11:41] "GET /register HTTP/1.1" 200 -
+2024-11-14 01:11:42,007 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:11:42] "[36mGET /static/images/logo.png HTTP/1.1[0m" 304 -
+2024-11-14 01:11:58,964 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:11:58] "[32mPOST /register HTTP/1.1[0m" 302 -
+2024-11-14 01:11:58,974 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:11:58] "GET /verify_otp HTTP/1.1" 200 -
+2024-11-14 01:12:28,409 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:12:28] "[32mPOST /verify_otp HTTP/1.1[0m" 302 -
+2024-11-14 01:12:28,430 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:12:28] "GET /home HTTP/1.1" 200 -
+2024-11-14 01:12:28,551 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:12:28] "GET /static/images/online-classes-icon.png HTTP/1.1" 200 -
+2024-11-14 01:12:28,561 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:12:28] "GET /static/images/cloud-tools-icon.png HTTP/1.1" 200 -
+2024-11-14 01:12:28,679 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:12:28] "GET /static/images/community-icon.png HTTP/1.1" 200 -
+2024-11-14 01:12:28,683 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:12:28] "GET /static/images/profile_pictures/profile.jpg HTTP/1.1" 200 -
+2024-11-14 01:12:28,798 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:12:28] "[33mGET /static/images/cloud-banner.jpg HTTP/1.1[0m" 404 -
+2024-11-14 01:12:43,794 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:12:43] "GET /resources HTTP/1.1" 200 -
+2024-11-14 01:12:43,867 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:12:43] "[36mGET /static/images/online-classes-icon.png HTTP/1.1[0m" 304 -
+2024-11-14 01:12:43,879 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:12:43] "GET /static/images/software-tools-icon.png HTTP/1.1" 200 -
+2024-11-14 01:12:43,998 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:12:43] "GET /static/images/programming-books-icon.png HTTP/1.1" 200 -
+2024-11-14 01:12:44,001 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:12:44] "GET /static/images/cloud-computing-icon.png HTTP/1.1" 200 -
+2024-11-14 01:12:45,794 - root - INFO - Accessing ML/AI page - Starting access check
+2024-11-14 01:12:45,795 - root - INFO - User ID 6 attempting to access ML/AI content
+2024-11-14 01:12:45,796 - root - INFO - Payment check results for user 6:
+2024-11-14 01:12:45,796 - root - INFO - has_paid status: 0
+2024-11-14 01:12:45,797 - root - INFO - payment status: NO_PAYMENT
+2024-11-14 01:12:45,797 - root - INFO - last payment date: NEVER
+2024-11-14 01:12:45,797 - root - WARNING - Access denied to user 6 - No payment found
+2024-11-14 01:12:45,798 - root - INFO - ML/AI page access check completed for user 6
+2024-11-14 01:12:45,799 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:12:45] "[32mGET /mlai HTTP/1.1[0m" 302 -
+2024-11-14 01:12:45,813 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:12:45] "GET /payment HTTP/1.1" 200 -
+2024-11-14 01:12:53,470 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:12:53] "POST /api/orders HTTP/1.1" 200 -
+2024-11-14 01:13:47,621 - root - INFO - Capturing order 7UP27916GD340482V
+2024-11-14 01:13:49,300 - root - INFO - Payment status: COMPLETED
+2024-11-14 01:13:49,317 - root - INFO - Payment recorded successfully for user 6
+2024-11-14 01:13:49,318 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:13:49] "POST /api/orders/7UP27916GD340482V/capture HTTP/1.1" 200 -
+2024-11-14 01:13:51,342 - root - INFO - Accessing ML/AI page - Starting access check
+2024-11-14 01:13:51,342 - root - INFO - User ID 6 attempting to access ML/AI content
+2024-11-14 01:13:51,342 - root - INFO - Payment check results for user 6:
+2024-11-14 01:13:51,342 - root - INFO - has_paid status: 1
+2024-11-14 01:13:51,342 - root - INFO - payment status: COMPLETED
+2024-11-14 01:13:51,342 - root - INFO - last payment date: 2024-11-13 22:13:49
+2024-11-14 01:13:51,342 - root - INFO - Access granted to user 6 - Payment verified
+2024-11-14 01:13:51,342 - root - INFO - ML/AI page access check completed for user 6
+2024-11-14 01:13:51,352 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:13:51] "GET /mlai HTTP/1.1" 200 -
+2024-11-14 01:13:51,667 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:13:51] "[36mGET /pdfs/intro_to_aiml.pdf HTTP/1.1[0m" 304 -
+2024-11-14 01:13:51,670 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:13:51] "[36mGET /pdfs/types_of_ml.pdf HTTP/1.1[0m" 304 -
+2024-11-14 01:13:51,673 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:13:51] "[36mGET /pdfs/setup_aiml_env.pdf HTTP/1.1[0m" 304 -
+2024-11-14 01:13:51,674 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:13:51] "[36mGET /pdfs/ai_model_security.pdf HTTP/1.1[0m" 304 -
+2024-11-14 01:13:51,681 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:13:51] "[36mGET /pdfs/deploying_ml_models.pdf HTTP/1.1[0m" 304 -
+2024-11-14 01:13:51,684 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:13:51] "[36mGET /pdfs/managing_ai_costs.pdf HTTP/1.1[0m" 304 -
+2024-11-14 01:14:08,509 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:14:08] "[32mGET /logout HTTP/1.1[0m" 302 -
+2024-11-14 01:14:08,521 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:14:08] "GET /login HTTP/1.1" 200 -
+2024-11-14 01:14:08,651 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:14:08] "[36mGET /static/images/logo.png HTTP/1.1[0m" 304 -
+2024-11-14 01:14:11,636 - root - INFO - Accessing ML/AI page - Starting access check
+2024-11-14 01:14:11,637 - root - INFO - User ID 6 attempting to access ML/AI content
+2024-11-14 01:14:11,638 - root - INFO - Payment check results for user 6:
+2024-11-14 01:14:11,638 - root - INFO - has_paid status: 1
+2024-11-14 01:14:11,639 - root - INFO - payment status: COMPLETED
+2024-11-14 01:14:11,639 - root - INFO - last payment date: 2024-11-13 22:13:49
+2024-11-14 01:14:11,639 - root - INFO - Access granted to user 6 - Payment verified
+2024-11-14 01:14:11,640 - root - INFO - ML/AI page access check completed for user 6
+2024-11-14 01:14:11,641 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:14:11] "GET /mlai HTTP/1.1" 200 -
+2024-11-14 01:14:12,019 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:14:12] "[36mGET /pdfs/intro_to_aiml.pdf HTTP/1.1[0m" 304 -
+2024-11-14 01:14:12,023 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:14:12] "[36mGET /pdfs/types_of_ml.pdf HTTP/1.1[0m" 304 -
+2024-11-14 01:14:12,029 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:14:12] "[36mGET /pdfs/setup_aiml_env.pdf HTTP/1.1[0m" 304 -
+2024-11-14 01:14:12,033 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:14:12] "[36mGET /pdfs/ai_model_security.pdf HTTP/1.1[0m" 304 -
+2024-11-14 01:14:12,037 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:14:12] "[36mGET /pdfs/deploying_ml_models.pdf HTTP/1.1[0m" 304 -
+2024-11-14 01:14:12,038 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:14:12] "[36mGET /pdfs/managing_ai_costs.pdf HTTP/1.1[0m" 304 -
+2024-11-14 01:14:14,529 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:14:14] "[32mGET /logout HTTP/1.1[0m" 302 -
+2024-11-14 01:14:14,542 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:14:14] "GET /login HTTP/1.1" 200 -
+2024-11-14 01:14:14,707 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:14:14] "[36mGET /static/images/logo.png HTTP/1.1[0m" 304 -
+2024-11-14 01:14:18,378 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:14:18] "GET /forgot_password HTTP/1.1" 200 -
+2024-11-14 01:14:23,096 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:14:23] "GET /register HTTP/1.1" 200 -
+2024-11-14 01:14:23,222 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:14:23] "[36mGET /static/images/logo.png HTTP/1.1[0m" 304 -
+2024-11-14 01:15:46,423 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:15:46] "[32mPOST /register HTTP/1.1[0m" 302 -
+2024-11-14 01:15:46,454 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:15:46] "GET /verify_otp HTTP/1.1" 200 -
+2024-11-14 01:16:06,067 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:16:06] "[32mPOST /verify_otp HTTP/1.1[0m" 302 -
+2024-11-14 01:16:06,153 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:16:06] "GET /home HTTP/1.1" 200 -
+2024-11-14 01:16:06,410 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:16:06] "[36mGET /static/images/online-classes-icon.png HTTP/1.1[0m" 304 -
+2024-11-14 01:16:06,416 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:16:06] "[36mGET /static/images/cloud-tools-icon.png HTTP/1.1[0m" 304 -
+2024-11-14 01:16:06,476 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:16:06] "[36mGET /static/images/community-icon.png HTTP/1.1[0m" 304 -
+2024-11-14 01:16:06,488 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:16:06] "[36mGET /static/images/profile_pictures/profile.jpg HTTP/1.1[0m" 304 -
+2024-11-14 01:16:06,627 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:16:06] "[33mGET /static/images/cloud-banner.jpg HTTP/1.1[0m" 404 -
+2024-11-14 01:16:10,548 - root - INFO - Accessing ML/AI page - Starting access check
+2024-11-14 01:16:10,548 - root - INFO - User ID 7 attempting to access ML/AI content
+2024-11-14 01:16:10,549 - root - INFO - Payment check results for user 7:
+2024-11-14 01:16:10,550 - root - INFO - has_paid status: 0
+2024-11-14 01:16:10,550 - root - INFO - payment status: NO_PAYMENT
+2024-11-14 01:16:10,551 - root - INFO - last payment date: NEVER
+2024-11-14 01:16:10,551 - root - WARNING - Access denied to user 7 - No payment found
+2024-11-14 01:16:10,552 - root - INFO - ML/AI page access check completed for user 7
+2024-11-14 01:16:10,553 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:16:10] "[32mGET /mlai HTTP/1.1[0m" 302 -
+2024-11-14 01:16:10,565 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:16:10] "GET /payment HTTP/1.1" 200 -
+2024-11-14 01:16:17,452 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:16:17] "[33mGET /payment/ds HTTP/1.1[0m" 404 -
