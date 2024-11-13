@@ -197,7 +197,7 @@ def create_order():
                     PurchaseUnitRequest(
                         amount=AmountWithBreakdown(
                             currency_code="USD",
-                            value="100",
+                            value="20",
                         ),
 
                     )
