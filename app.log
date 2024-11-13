@@ -163,3 +163,5 @@
 2024-11-14 01:16:10,553 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:16:10] "[32mGET /mlai HTTP/1.1[0m" 302 -
 2024-11-14 01:16:10,565 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:16:10] "GET /payment HTTP/1.1" 200 -
 2024-11-14 01:16:17,452 - werkzeug - INFO - 127.0.0.1 - - [14/Nov/2024 01:16:17] "[33mGET /payment/ds HTTP/1.1[0m" 404 -
+2024-11-14 01:18:29,799 - werkzeug - INFO -  * Detected change in 'D:\\Work\\Web\\Codeflux\\app.py', reloading
+2024-11-14 01:18:29,866 - werkzeug - INFO -  * Restarting with stat
