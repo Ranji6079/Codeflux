@@ -267,11 +267,6 @@
         </ul>
     </nav>
 
-    {% if not session.user_has_paid %}
-        <script>
-            window.location.href = "{{ url_for('mlai_page') }}";
-        </script>
-    {% else %}
     <section>
         <h2>Explore Our AI/ML Engineering Tutorials</h2>
 
@@ -381,7 +376,6 @@
         </div>
 
     </section>
-    {% endif %}
 
     <footer>
         <p>&copy; 2024 AI/ML Engineering Tutorials by Code Flux. <br> <a href="/privacy">Privacy Policy</a> | <a href="/terms">Terms of Service</a></p>

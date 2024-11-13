@@ -13,8 +13,11 @@ app = Flask(__name__)
 app.secret_key = os.urandom(24)
 from werkzeug.utils import secure_filename
 # Add these imports at the top of your file
+
 import logging
 import os
+
+from flask import Flask, request
 from paypalserversdk.http.auth.o_auth_2 import ClientCredentialsAuthCredentials
 from paypalserversdk.logging.configuration.api_logging_configuration import (
     LoggingConfiguration,
@@ -27,17 +30,31 @@ from paypalserversdk.controllers.payments_controller import PaymentsController
 from paypalserversdk.models.amount_with_breakdown import AmountWithBreakdown
 from paypalserversdk.models.checkout_payment_intent import CheckoutPaymentIntent
 from paypalserversdk.models.order_request import OrderRequest
+from paypalserversdk.models.capture_request import CaptureRequest
+from paypalserversdk.models.money import Money
+from paypalserversdk.models.shipping_details import ShippingDetails
+from paypalserversdk.models.shipping_option import ShippingOption
+from paypalserversdk.models.shipping_type import ShippingType
 from paypalserversdk.models.purchase_unit_request import PurchaseUnitRequest
+from paypalserversdk.models.payment_source import PaymentSource
+from paypalserversdk.models.card_request import CardRequest
+from paypalserversdk.models.card_attributes import CardAttributes
+from paypalserversdk.models.card_verification import CardVerification
+from paypalserversdk.models.card_verification_method import CardVerificationMethod
 from paypalserversdk.api_helper import ApiHelper
 
-# Initialize PayPal client
-paypal_client = PaypalServersdkClient(
+app = Flask(__name__)
+
+
+paypal_client: PaypalServersdkClient = PaypalServersdkClient(
     client_credentials_auth_credentials=ClientCredentialsAuthCredentials(
-        o_auth_client_id="AeRRud6E1YCsRUXFGKENChRJrjO9cFdrdSmcuj-m8zer9glCyFiU5jSJQoMQPPI6e4JxDyulTG47OvsJ",
-        o_auth_client_secret="EDNZIPk0RWPSXRUnu89uT5d1RGTdOD04DocwhBMUVwutiMOGiwGQzks3lgYICU_n-embN9fRHjvKiXdD",
+        o_auth_client_id=os.getenv("PAYPAL_CLIENT_ID"),
+        o_auth_client_secret=os.getenv("PAYPAL_CLIENT_SECRET"),
     ),
     logging_configuration=LoggingConfiguration(
         log_level=logging.INFO,
+        # Disable masking of sensitive headers for Sandbox testing.
+        # This should be set to True (the default if unset)in production.
         mask_sensitive_headers=False,
         request_logging_config=RequestLoggingConfiguration(
             log_headers=True, log_body=True
@@ -48,76 +65,8 @@ paypal_client = PaypalServersdkClient(
     ),
 )
 
-orders_controller = paypal_client.orders
-payments_controller = paypal_client.payments
-
-@app.route("/api/orders", methods=["POST"])
-def create_order():
-    try:
-        request_body = request.get_json()
-        order = orders_controller.orders_create(
-            {
-                "body": OrderRequest(
-                    intent=CheckoutPaymentIntent.CAPTURE,
-                    purchase_units=[
-                        PurchaseUnitRequest(
-                            amount=AmountWithBreakdown(
-                                currency_code="USD",
-                                value="100.00",
-                            ),
-                            description="CodeFlux ML/AI Course Access"
-                        )
-                    ],
-                )
-            }
-        )
-        return ApiHelper.json_serialize(order.body)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route("/api/orders/<order_id>/capture", methods=["POST"])
-def capture_order(order_id):
-    try:
-        order = orders_controller.orders_capture(
-            {"id": order_id, "prefer": "return=representation"}
-        )
-        
-        # If capture successful, update user payment status
-        if order.status_code == 201:
-            conn = get_db()
-            cursor = conn.cursor()
-            
-            try:
-                cursor.execute('BEGIN TRANSACTION')
-                
-                # Update user payment status
-                cursor.execute('''
-                    UPDATE users 
-                    SET has_paid = 1 
-                    WHERE id = ?
-                ''', (session['user_id'],))
-                
-                # Record the payment
-                cursor.execute('''
-                    INSERT INTO payments (
-                        user_id, 
-                        amount, 
-                        payment_id, 
-                        status
-                    ) VALUES (?, ?, ?, ?)
-                ''', (session['user_id'], 100.00, order_id, 'COMPLETED'))
-                
-                cursor.execute('COMMIT')
-                
-            except Exception as e:
-                cursor.execute('ROLLBACK')
-                raise e
-            finally:
-                conn.close()
-                
-        return ApiHelper.json_serialize(order.body)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+orders_controller: OrdersController = paypal_client.orders
+payments_controller: PaymentsController = paypal_client.payments
 
 # Initialize the Flask app with static folder configuration
 app = Flask(__name__, static_folder='static')
@@ -229,6 +178,37 @@ def index():
     if 'logged_in' in session:
         return redirect(url_for('home_page'))  # Redirect to home if logged in
     return render_template('index.html')  # Render index.html for guests
+
+"""
+Create an order to start the transaction.
+
+@see https://developer.paypal.com/docs/api/orders/v2/#orders_create
+"""
+@app.route("/api/orders", methods=["POST"])
+def create_order():
+    request_body = request.get_json()
+    # use the cart information passed from the front-end to calculate the order amount detals
+    cart = request_body["cart"]
+    order = orders_controller.orders_create(
+        {
+            "body": OrderRequest(
+                intent=CheckoutPaymentIntent.CAPTURE,
+                purchase_units=[
+                    PurchaseUnitRequest(
+                        amount=AmountWithBreakdown(
+                            currency_code="USD",
+                            value="100",
+                        ),
+
+                    )
+                ],
+
+            )
+        }
+    )
+    return ApiHelper.json_serialize(order.body)
+
+
 
 # Resources route
 @app.route('/resources')
@@ -560,12 +540,24 @@ def get_db():
     return conn
 
 def user_has_paid(user_id):
+    if not user_id:
+        return False
+        
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute('SELECT has_paid FROM users WHERE id = ?', (user_id,))
-    result = cursor.fetchone()
-    conn.close()
-    return result['has_paid'] if result else False
+    try:
+        cursor.execute('''
+            SELECT has_paid 
+            FROM users 
+            WHERE id = ?
+        ''', (user_id,))
+        result = cursor.fetchone()
+        return bool(result['has_paid']) if result else False
+    except Exception as e:
+        logging.error(f"Error checking payment status: {str(e)}")
+        return False
+    finally:
+        conn.close()
 
 @app.context_processor
 def utility_processor():
@@ -575,13 +567,56 @@ def utility_processor():
         return False
     return dict(user_has_paid=check_payment)
 
-@app.route('/payment')
-def payment_page():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    return render_template('payment.html', 
-                           paypal_client_id="AeRRud6E1YCsRUXFGKENChRJrjO9cFdrdSmcuj-m8zer9glCyFiU5jSJQoMQPPI6e4JxDyulTG47OvsJ")
-    
+@app.route("/api/orders/<order_id>/capture", methods=["POST"])
+def capture_order(order_id):
+    try:
+        order = orders_controller.orders_capture(
+            {"id": order_id, "prefer": "return=representation"}
+        )
+        
+        # Parse the response body
+        order_data = ApiHelper.json_serialize(order.body)
+        order_dict = ApiHelper.json_deserialize(order_data)
+        
+        # Check if payment was successful
+        if order_dict.get('status') == "COMPLETED":
+            if 'user_id' in session:
+                conn = get_db()
+                cursor = conn.cursor()
+                try:
+                    # Update user payment status
+                    cursor.execute('UPDATE users SET has_paid = 1 WHERE id = ?', 
+                                 (session['user_id'],))
+                    
+                    # Get payment details
+                    payment_info = order_dict.get('purchase_units', [{}])[0].get('payments', {}).get('captures', [{}])[0]
+                    amount = payment_info.get('amount', {}).get('value', '0.00')
+                    
+                    # Record the payment
+                    cursor.execute('''
+                        INSERT INTO payments (user_id, amount, payment_id, status)
+                        VALUES (?, ?, ?, ?)
+                    ''', (session['user_id'], float(amount), order_id, 'COMPLETED'))
+                    
+                    conn.commit()
+                    logging.info(f"Payment recorded successfully for user {session['user_id']}")
+                    
+                except Exception as e:
+                    conn.rollback()
+                    logging.error(f"Database error: {str(e)}")
+                    raise e
+                finally:
+                    conn.close()
+        
+        return order_data
+        
+    except Exception as e:
+        logging.error(f"Error capturing order: {str(e)}")
+        return jsonify({
+            "error": str(e),
+            "message": "Failed to process payment"
+        }), 500
+
 
 @app.route('/mlai')
 def mlai_page():
@@ -590,14 +625,78 @@ def mlai_page():
     
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute('SELECT has_paid FROM users WHERE id = ?', (session['user_id'],))
-    user = cursor.fetchone()
-    conn.close()
+    try:
+        # Check payment status
+        cursor.execute('''
+            SELECT u.has_paid, p.payment_date 
+            FROM users u 
+            LEFT JOIN payments p ON u.id = p.user_id 
+            WHERE u.id = ? 
+            ORDER BY p.payment_date DESC LIMIT 1
+        ''', (session['user_id'],))
+        result = cursor.fetchone()
+        
+        if result and result['has_paid']:
+            return render_template('mlai.html', 
+                                 payment_date=result['payment_date'])
+        else:
+            flash("Please complete the payment to access the ML/AI course content.")
+            return redirect(url_for('payment_page'))
+            
+    except Exception as e:
+        logging.error(f"Database error: {str(e)}")
+        flash("An error occurred. Please try again.")
+        return redirect(url_for('home_page'))
+    finally:
+        conn.close()
 
-    if user and user['has_paid']:
-        return render_template('mlai.html')
-    else:
-        return redirect(url_for('payment_page'))
+@app.route('/payment')
+def payment_page():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        # Check if user has already paid
+        cursor.execute('SELECT has_paid FROM users WHERE id = ?', (session['user_id'],))
+        user = cursor.fetchone()
+        
+        if user and user['has_paid']:
+            flash("You have already purchased the course!")
+            return redirect(url_for('mlai'))
+            
+        return render_template('payment.html', 
+                             paypal_client_id=os.getenv("PAYPAL_CLIENT_ID"))
+    except Exception as e:
+        logging.error(f"Database error: {str(e)}")
+        flash("An error occurred. Please try again.")
+        return redirect(url_for('home_page'))
+    finally:
+        conn.close()
+
+# Add a new route to check payment status
+@app.route('/check_payment_status')
+def check_payment_status():
+    if 'user_id' not in session:
+        return jsonify({'paid': False, 'message': 'Not logged in'})
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('SELECT has_paid FROM users WHERE id = ?', (session['user_id'],))
+        result = cursor.fetchone()
+        return jsonify({
+            'paid': bool(result['has_paid']) if result else False,
+            'message': 'Payment verified' if result and result['has_paid'] else 'Payment required'
+        })
+    except Exception as e:
+        logging.error(f"Database error: {str(e)}")
+        return jsonify({'paid': False, 'message': 'Error checking payment status'})
+    finally:
+        conn.close()
+
+
 # Compiler route
 @app.route('/compiler')
 def compiler():
@@ -705,5 +804,5 @@ def install_libraries(libraries):
 if __name__ == "__main__":
     init_db()  # Initialize the database
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    app.run(host="0.0.0.0", port=port)
 

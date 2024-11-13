@@ -306,62 +306,89 @@
     </footer>
 
    <!-- Replace the existing PayPal script with this one -->
-   <script src="https://www.paypal.com/sdk/js?client-id={{ paypal_client_id }}&currency=USD"></script>
-   <script>
-       function resultMessage(message) {
-           const resultElement = document.getElementById('result-message');
-           resultElement.innerHTML = message;
-       }
-   
-       paypal.Buttons({
-           style: {
-               shape: 'rect',
-               layout: 'vertical',
-               color: 'gold',
-               label: 'pay'
-           },
-           
-           // Create order directly without server
-           createOrder: function(data, actions) {
-               return actions.order.create({
-                   purchase_units: [{
-                       description: "CodeFlux ML/AI Course Access",
-                       amount: {
-                           currency_code: "USD",
-                           value: '100.00'
-                       }
-                   }]
-               });
-           },
-   
-           // Handle approved payment
-           onApprove: function(data, actions) {
-               return actions.order.capture().then(function(details) {
-                   console.log('Transaction completed by ' + details.payer.name.given_name);
-                   resultMessage('Payment successful! Redirecting to course content...');
-                   
-                   // Redirect to course content after successful payment
-                   setTimeout(() => {
-                       window.location.href = '/mlai';
-                   }, 2000);
-               });
-           },
-   
-           // Handle errors
-           onError: function(err) {
-               console.error('PayPal error:', err);
-               resultMessage('An error occurred during payment processing. Please try again.');
-           }
-       }).render('#paypal-button-container');
-   
-       // Keep the dark mode toggle function
-       function toggleDarkMode() {
-           document.body.classList.toggle('dark-mode');
-       }
-   </script>
-   
-
-
+   <script
+            src="https://www.paypal.com/sdk/js?client-id=AeRRud6E1YCsRUXFGKENChRJrjO9cFdrdSmcuj-m8zer9glCyFiU5jSJQoMQPPI6e4JxDyulTG47OvsJ&buyer-country=US&currency=USD&components=buttons&enable-funding=card&disable-funding=venmo,paylater"
+            data-sdk-integration-source="developer-studio"
+        ></script>
+        <script>
+          function resultMessage(message) {
+              const resultElement = document.getElementById('result-message');
+              resultElement.innerHTML = message;
+          }
+      
+          paypal.Buttons({
+              style: {
+                  shape: 'rect',
+                  color: 'gold',
+                  layout: 'vertical',
+                  label: 'pay'
+              },
+      
+              createOrder: function(data, actions) {
+                  return fetch('/api/orders', {
+                      method: 'POST',
+                      headers: {
+                          'Content-Type': 'application/json'
+                      },
+                      body: JSON.stringify({
+                          cart: [{
+                              id: "MLAI_COURSE",
+                              quantity: "1"
+                          }]
+                      })
+                  }).then(function(res) {
+                      return res.json();
+                  }).then(function(orderData) {
+                      if (orderData.error) {
+                          throw new Error(orderData.error);
+                      }
+                      return orderData.id;
+                  });
+              },
+      
+              onApprove: function(data, actions) {
+                  resultMessage('Processing payment...');
+                  
+                  return fetch(`/api/orders/${data.orderID}/capture`, {
+                      method: 'POST',
+                      headers: {
+                          'Content-Type': 'application/json'
+                      }
+                  })
+                  .then(function(res) {
+                      if (!res.ok) {
+                          throw new Error('Payment failed');
+                      }
+                      return res.json();
+                  })
+                  .then(function(orderData) {
+                      if (orderData.error) {
+                          throw new Error(orderData.error);
+                      }
+                      
+                      if (orderData.status === 'COMPLETED') {
+                          resultMessage('Payment successful! Redirecting to course content...');
+                          setTimeout(() => {
+                              window.location.href = '/mlai';
+                          }, 2000);
+                      } else {
+                          throw new Error('Payment not completed');
+                      }
+                  })
+                  .catch(function(err) {
+                      resultMessage('Payment failed: ' + err.message);
+                      console.error('Payment error:', err);
+                  });
+              },
+      
+              onError: function(err) {
+                  console.error('PayPal error:', err);
+                  resultMessage('Payment error occurred. Please try again.');
+              }
+          }).render('#paypal-button-container');
+      </script>
+      
+  
 </body>
 
 </html>
