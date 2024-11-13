@@ -48,8 +48,8 @@ app = Flask(__name__)
 
 paypal_client: PaypalServersdkClient = PaypalServersdkClient(
     client_credentials_auth_credentials=ClientCredentialsAuthCredentials(
-        o_auth_client_id=os.getenv("PAYPAL_CLIENT_ID"),
-        o_auth_client_secret=os.getenv("PAYPAL_CLIENT_SECRET"),
+        o_auth_client_id="AeRRud6E1YCsRUXFGKENChRJrjO9cFdrdSmcuj-m8zer9glCyFiU5jSJQoMQPPI6e4JxDyulTG47OvsJ",
+        o_auth_client_secret="EDNZIPk0RWPSXRUnu89uT5d1RGTdOD04DocwhBMUVwutiMOGiwGQzks3lgYICU_n-embN9fRHjvKiXdD",
     ),
     logging_configuration=LoggingConfiguration(
         log_level=logging.INFO,
