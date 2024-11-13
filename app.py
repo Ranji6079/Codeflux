@@ -12,6 +12,113 @@ from itsdangerous import URLSafeTimedSerializer
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 from werkzeug.utils import secure_filename
+# Add these imports at the top of your file
+import logging
+import os
+from paypalserversdk.http.auth.o_auth_2 import ClientCredentialsAuthCredentials
+from paypalserversdk.logging.configuration.api_logging_configuration import (
+    LoggingConfiguration,
+    RequestLoggingConfiguration,
+    ResponseLoggingConfiguration,
+)
+from paypalserversdk.paypal_serversdk_client import PaypalServersdkClient
+from paypalserversdk.controllers.orders_controller import OrdersController
+from paypalserversdk.controllers.payments_controller import PaymentsController
+from paypalserversdk.models.amount_with_breakdown import AmountWithBreakdown
+from paypalserversdk.models.checkout_payment_intent import CheckoutPaymentIntent
+from paypalserversdk.models.order_request import OrderRequest
+from paypalserversdk.models.purchase_unit_request import PurchaseUnitRequest
+from paypalserversdk.api_helper import ApiHelper
+
+# Initialize PayPal client
+paypal_client = PaypalServersdkClient(
+    client_credentials_auth_credentials=ClientCredentialsAuthCredentials(
+        o_auth_client_id="AeRRud6E1YCsRUXFGKENChRJrjO9cFdrdSmcuj-m8zer9glCyFiU5jSJQoMQPPI6e4JxDyulTG47OvsJ",
+        o_auth_client_secret="EDNZIPk0RWPSXRUnu89uT5d1RGTdOD04DocwhBMUVwutiMOGiwGQzks3lgYICU_n-embN9fRHjvKiXdD",
+    ),
+    logging_configuration=LoggingConfiguration(
+        log_level=logging.INFO,
+        mask_sensitive_headers=False,
+        request_logging_config=RequestLoggingConfiguration(
+            log_headers=True, log_body=True
+        ),
+        response_logging_config=ResponseLoggingConfiguration(
+            log_headers=True, log_body=True
+        ),
+    ),
+)
+
+orders_controller = paypal_client.orders
+payments_controller = paypal_client.payments
+
+@app.route("/api/orders", methods=["POST"])
+def create_order():
+    try:
+        request_body = request.get_json()
+        order = orders_controller.orders_create(
+            {
+                "body": OrderRequest(
+                    intent=CheckoutPaymentIntent.CAPTURE,
+                    purchase_units=[
+                        PurchaseUnitRequest(
+                            amount=AmountWithBreakdown(
+                                currency_code="USD",
+                                value="100.00",
+                            ),
+                            description="CodeFlux ML/AI Course Access"
+                        )
+                    ],
+                )
+            }
+        )
+        return ApiHelper.json_serialize(order.body)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/orders/<order_id>/capture", methods=["POST"])
+def capture_order(order_id):
+    try:
+        order = orders_controller.orders_capture(
+            {"id": order_id, "prefer": "return=representation"}
+        )
+        
+        # If capture successful, update user payment status
+        if order.status_code == 201:
+            conn = get_db()
+            cursor = conn.cursor()
+            
+            try:
+                cursor.execute('BEGIN TRANSACTION')
+                
+                # Update user payment status
+                cursor.execute('''
+                    UPDATE users 
+                    SET has_paid = 1 
+                    WHERE id = ?
+                ''', (session['user_id'],))
+                
+                # Record the payment
+                cursor.execute('''
+                    INSERT INTO payments (
+                        user_id, 
+                        amount, 
+                        payment_id, 
+                        status
+                    ) VALUES (?, ?, ?, ?)
+                ''', (session['user_id'], 100.00, order_id, 'COMPLETED'))
+                
+                cursor.execute('COMMIT')
+                
+            except Exception as e:
+                cursor.execute('ROLLBACK')
+                raise e
+            finally:
+                conn.close()
+                
+        return ApiHelper.json_serialize(order.body)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 # Initialize the Flask app with static folder configuration
 app = Flask(__name__, static_folder='static')
 # Set a secret key for the app
@@ -40,10 +147,13 @@ def allowed_file(filename):
 # Track failed login attempts
 failed_attempts = {}
 
-# Initialize the SQLite database
+
+# Initialize the SQLite databasedef init_db():
 def init_db():
     conn = sqlite3.connect('database.db')
     c = conn.cursor()
+    
+    # Create users table if it doesn't exist
     c.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,12 +165,33 @@ def init_db():
             dob DATE,
             country TEXT,
             profile_picture TEXT,
-            otp TEXT
+            otp TEXT,
+            has_paid BOOLEAN DEFAULT 0
         )
     ''')
+    
+    # Check if 'has_paid' column exists, if not, add it
+    c.execute("PRAGMA table_info(users)")
+    columns = [column[1] for column in c.fetchall()]
+    if 'has_paid' not in columns:
+        c.execute("ALTER TABLE users ADD COLUMN has_paid BOOLEAN DEFAULT 0")
+    
+    # Create payments table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS payments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            amount DECIMAL(10,2) NOT NULL,
+            payment_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+            payment_id TEXT,
+            status TEXT,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+    
     conn.commit()
     conn.close()
-
+    
 def send_alert_email():
     try:
         msg = MIMEText("Dear admin, Your system has received attempted hack! Stay on High Alert!")
@@ -173,23 +304,23 @@ def login():
     global failed_attempts
     
     if request.method == 'POST':
-        email = request.form['email']  # Accept email for login
+        email = request.form['email']
         password = request.form['password']
-        role = request.form['role']  # Accept role information
+        role = request.form['role']
         
         conn = sqlite3.connect('database.db')
         c = conn.cursor()
         
         # Check if the email and password are valid
-        c.execute("SELECT * FROM users WHERE email = ? AND password = ?", (email, password))
+        c.execute("SELECT id, * FROM users WHERE email = ? AND password = ?", (email, password))
         user = c.fetchone()
         conn.close()
         
         if user:
-            failed_attempts[email] = 0  # Reset attempts after successful login
+            failed_attempts[email] = 0
             
             otp = str(random.randint(100000, 999999))
-            send_otp(email, otp)  # Send OTP to user's email
+            send_otp(email, otp)
             
             # Update OTP in the database
             conn = sqlite3.connect('database.db')
@@ -199,10 +330,10 @@ def login():
             conn.close()
             
             session['email'] = email
-            session['role'] = role  # Store the user's role in the session
+            session['user_id'] = user[0]  # Add user_id to session
+            session['role'] = role
             
-            # Redirect to OTP verification instead of directly to the role-specific page
-            return redirect(url_for('verify_otp'))  # Go to OTP verification page
+            return redirect(url_for('verify_otp'))
 
         else:
             failed_attempts[email] = failed_attempts.get(email, 0) + 1
@@ -211,6 +342,7 @@ def login():
             flash("Invalid credentials, please try again.")
     
     return render_template('login.html')
+
 
 # verify otp route
 @app.route('/verify_otp', methods=['GET', 'POST'])
@@ -227,11 +359,15 @@ def verify_otp():
         
         if user:
             session['logged_in'] = True
+            # Make sure user_id remains in session
+            if 'user_id' not in session:
+                session['user_id'] = user[0]  # Assuming id is the first column
             return redirect(url_for('home_page'))
         else:
             flash("Incorrect OTP, please try again.")
             return redirect(url_for('login'))
     return render_template('verify_otp.html')
+
 
 # register route
 @app.route('/register', methods=['GET', 'POST'])
@@ -418,17 +554,50 @@ def logout():
     session.pop('logged_in', None)
     return redirect(url_for('login'))
 
-# mlai tutorials route
-@app.route('/mlai')
-def cloud_computing_page():
-    # Check if the user is logged in
-    if 'logged_in' not in session:
-        # Redirect to login page if not logged in
-        flash("Please log in to access the mlai page.")
-        return redirect(url_for('login'))
+def get_db():
+    conn = sqlite3.connect('database.db')
+    conn.row_factory = sqlite3.Row
+    return conn
 
-    # If logged in, render the mlai page
-    return render_template('mlai.html')
+def user_has_paid(user_id):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('SELECT has_paid FROM users WHERE id = ?', (user_id,))
+    result = cursor.fetchone()
+    conn.close()
+    return result['has_paid'] if result else False
+
+@app.context_processor
+def utility_processor():
+    def check_payment():
+        if 'user_id' in session:
+            return user_has_paid(session['user_id'])
+        return False
+    return dict(user_has_paid=check_payment)
+
+@app.route('/payment')
+def payment_page():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    return render_template('payment.html', 
+                           paypal_client_id="AeRRud6E1YCsRUXFGKENChRJrjO9cFdrdSmcuj-m8zer9glCyFiU5jSJQoMQPPI6e4JxDyulTG47OvsJ")
+    
+
+@app.route('/mlai')
+def mlai_page():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('SELECT has_paid FROM users WHERE id = ?', (session['user_id'],))
+    user = cursor.fetchone()
+    conn.close()
+
+    if user and user['has_paid']:
+        return render_template('mlai.html')
+    else:
+        return redirect(url_for('payment_page'))
 # Compiler route
 @app.route('/compiler')
 def compiler():
@@ -532,6 +701,9 @@ def install_libraries(libraries):
             subprocess.run(['pip', 'install', library], check=True)
         except subprocess.CalledProcessError as e:
             print(f"Error installing {library}: {e}")
+
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # Default to port 5000 if PORT not found
-    app.run(host="0.0.0.0", port=port)
+    init_db()  # Initialize the database
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)
+

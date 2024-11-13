@@ -208,36 +208,25 @@
             <div class="pdf-viewer">
                 <iframe src="{{ url_for('serve_pdf', filename='pdf1.pdf') }}" title="Book 1"></iframe>
             </div>
-            <button class="btn btn-primary add-to-cart" data-price="20">Add to Cart - $20</button>
         </div>
         <div class="book">
-            <div class="book-title"><i class="fas fa-book"></i>Book 2: Java Programming Basics</div>
+            <div class="book-title"><i class="fas fa-book"></i>Book 2: Python Modules</div>
             <div class="pdf-viewer">
-                <iframe src="{{ url_for('serve_pdf', filename='pdf2.pdf') }}" title="Book 2"></iframe>
+                <iframe src="{{ url_for('serve_pdf', filename='python_modules.pdf') }}" title="Book 2"></iframe>
             </div>
-            <button class="btn btn-primary add-to-cart" data-price="25">Add to Cart - $25</button>
         </div>
         <div class="book">
-            <div class="book-title"><i class="fas fa-book"></i>Book 3: C++ for Beginners</div>
+            <div class="book-title"><i class="fas fa-book"></i>Book 3: Introduction to Python Programming</div>
             <div class="pdf-viewer">
-                <iframe src="{{ url_for('serve_pdf', filename='pdf3.pdf') }}" title="Book 3"></iframe>
+                <iframe src="{{ url_for('serve_pdf', filename='Introduction_to_Python_Programming_-_WEB.pdf') }}" title="Book 3"></iframe>
             </div>
-            <button class="btn btn-primary add-to-cart" data-price="30">Add to Cart - $30</button>
         </div>
         <div class="book">
-            <div class="book-title"><i class="fas fa-book"></i>Book 4: Web Development Essentials</div>
+            <div class="book-title"><i class="fas fa-book"></i>Book 4: Learn Python The Hard Way 3rd Edition V413HAV</div>
             <div class="pdf-viewer">
-                <iframe src="{{ url_for('serve_pdf', filename='pdf4.pdf') }}" title="Book 4"></iframe>
+                <iframe src="{{ url_for('serve_pdf', filename='Learn Python The Hard Way 3rd Edition V413HAV.pdf') }}" title="Book 4"></iframe>
             </div>
-            <button class="btn btn-primary add-to-cart" data-price="15">Add to Cart - $15</button>
         </div>
-    </div>
-
-    <div id="cart">
-        <h3>Your Cart</h3>
-        <ul id="cart-items"></ul>
-        <p>Total: $<span id="total-price">0</span></p>
-        <div id="paypal-button-container"></div>
     </div>
 
     <footer>
@@ -247,66 +236,6 @@
             <a href="/terms" style="color: #fff; text-decoration: none;">Terms of Service</a>
         </p>
     </footer>
-    
-
-    <script>
-        let cart = [];
-        let totalPrice = 0;
-
-        // Add to Cart
-        document.querySelectorAll('.add-to-cart').forEach(button => {
-            button.addEventListener('click', (event) => {
-                const price = parseFloat(event.target.getAttribute('data-price'));
-                const bookTitle = event.target.previousElementSibling.previousElementSibling.innerText;
-                cart.push({ bookTitle, price });
-                updateCart();
-            });
-        });
-
-        // Remove from Cart
-        function removeFromCart(index) {
-            cart.splice(index, 1);
-            updateCart();
-        }
-
-        // Update Cart View
-        function updateCart() {
-            const cartItems = document.getElementById('cart-items');
-            const totalElement = document.getElementById('total-price');
-            cartItems.innerHTML = '';
-            totalPrice = 0;
-
-            cart.forEach((item, index) => {
-                const li = document.createElement('li');
-                li.innerHTML = `${item.bookTitle} - $${item.price} <button class="btn btn-danger btn-sm" onclick="removeFromCart(${index})">Remove</button>`;
-                cartItems.appendChild(li);
-                totalPrice += item.price;
-            });
-
-            totalElement.innerText = totalPrice.toFixed(2);
-        }
-
-        // PayPal Button Integration
-        paypal.Buttons({
-            createOrder: function(data, actions) {
-                return actions.order.create({
-                    purchase_units: [{
-                        amount: {
-                            value: totalPrice.toFixed(2)
-                        }
-                    }]
-                });
-            },
-            onApprove: function(data, actions) {
-                return actions.order.capture().then(function(details) {
-                    alert('Payment successful! Transaction completed by ' + details.payer.name.given_name);
-                    cart = [];  // Clear cart after successful payment
-                    updateCart();
-                });
-            }
-        }).render('#paypal-button-container');
-    </script>
-
 </body>
 
 </html>
