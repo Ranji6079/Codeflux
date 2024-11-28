@@ -284,47 +284,54 @@ def about():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     global failed_attempts
-    
+
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        role = request.form['role']
-        
+        role = request.form.get('role')  # Optional, default to None if not provided
+
         conn = sqlite3.connect('database.db')
         c = conn.cursor()
-        
-        # Check if the email and password are valid
-        c.execute("SELECT id, * FROM users WHERE email = ? AND password = ?", (email, password))
+
+        # Fetch user data by email
+        c.execute("SELECT id, password FROM users WHERE email = ?", (email,))
         user = c.fetchone()
         conn.close()
-        
+
         if user:
-            failed_attempts[email] = 0
-            
-            otp = str(random.randint(100000, 999999))
-            send_otp(email, otp)
-            
-            # Update OTP in the database
-            conn = sqlite3.connect('database.db')
-            c = conn.cursor()
-            c.execute("UPDATE users SET otp = ? WHERE email = ?", (otp, email))
-            conn.commit()
-            conn.close()
-            
-            session['email'] = email
-            session['user_id'] = user[0]  # Add user_id to session
-            session['role'] = role
-            
-            return redirect(url_for('verify_otp'))
+            user_id, hashed_password = user
 
+            # Compare the hashed password with the entered password
+            if check_password_hash(hashed_password, password):
+                failed_attempts[email] = 0
+
+                # Generate OTP and update it in the database
+                otp = str(random.randint(100000, 999999))
+                send_otp(email, otp)
+
+                conn = sqlite3.connect('database.db')
+                c = conn.cursor()
+                c.execute("UPDATE users SET otp = ? WHERE email = ?", (otp, email))
+                conn.commit()
+                conn.close()
+
+                # Set session variables
+                session['email'] = email
+                session['user_id'] = user_id
+                session['role'] = role
+
+                return redirect(url_for('verify_otp'))
+            else:
+                # Password mismatch
+                failed_attempts[email] = failed_attempts.get(email, 0) + 1
+                if failed_attempts[email] == 4:
+                    send_alert_email()
+                flash("Invalid credentials, please try again.")
         else:
-            failed_attempts[email] = failed_attempts.get(email, 0) + 1
-            if failed_attempts[email] == 4:
-                send_alert_email()
+            # User not found
             flash("Invalid credentials, please try again.")
-    
-    return render_template('login.html')
 
+    return render_template('login.html')
 
 # verify otp route
 @app.route('/verify_otp', methods=['GET', 'POST'])
